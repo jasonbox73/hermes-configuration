@@ -1,0 +1,589 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Hermes MVP — Setup Guide</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #171a23;
+    --panel-2: #1d212c;
+    --ink: #e7e9ee;
+    --muted: #9aa3b2;
+    --accent: #7c9cff;
+    --accent-2: #5cd6a9;
+    --line: #2a2f3c;
+    --code-bg: #11141b;
+    --code-ink: #d7e0ff;
+    --warn: #f0b072;
+    --mono: ui-monospace, "SF Mono", "JetBrains Mono", "Fira Code", Menlo, Consolas, monospace;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: var(--sans);
+    line-height: 1.6;
+    font-size: 16px;
+  }
+  .wrap {
+    max-width: 920px;
+    margin: 0 auto;
+    padding: 48px 28px 96px;
+  }
+
+  /* Header */
+  header.hero {
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    background: linear-gradient(135deg, #1a1f2e 0%, #14171f 100%);
+    padding: 32px 34px;
+    margin-bottom: 36px;
+  }
+  header.hero .kicker {
+    color: var(--accent-2);
+    font-family: var(--mono);
+    font-size: 13px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    margin: 0 0 8px;
+  }
+  header.hero h1 {
+    margin: 0 0 14px;
+    font-size: 30px;
+    letter-spacing: -0.01em;
+  }
+  .meta {
+    display: grid;
+    grid-template-columns: 130px 1fr;
+    gap: 6px 16px;
+    font-size: 14px;
+    margin-top: 18px;
+  }
+  .meta dt { color: var(--muted); font-family: var(--mono); }
+  .meta dd { margin: 0; font-family: var(--mono); color: var(--code-ink); word-break: break-all; }
+
+  /* Table of contents */
+  nav.toc {
+    border: 1px solid var(--line);
+    border-radius: 12px;
+    background: var(--panel);
+    padding: 20px 24px;
+    margin-bottom: 40px;
+  }
+  nav.toc h2 {
+    margin: 0 0 12px;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: .1em;
+    color: var(--muted);
+  }
+  nav.toc ol { margin: 0; padding-left: 20px; columns: 2; column-gap: 32px; }
+  nav.toc li { margin: 4px 0; }
+  nav.toc a { color: var(--ink); text-decoration: none; }
+  nav.toc a:hover { color: var(--accent); }
+
+  /* Sections */
+  section { margin-bottom: 40px; scroll-margin-top: 20px; }
+  h2.sec {
+    font-size: 21px;
+    border-bottom: 1px solid var(--line);
+    padding-bottom: 8px;
+    margin: 0 0 16px;
+  }
+  h2.sec .num {
+    color: var(--accent);
+    font-family: var(--mono);
+    margin-right: 10px;
+  }
+  h3.sub {
+    font-size: 16px;
+    color: var(--accent-2);
+    margin: 24px 0 10px;
+    font-family: var(--mono);
+  }
+  p { margin: 10px 0; }
+  p.note { color: var(--muted); font-size: 14.5px; }
+
+  /* File/dir lists */
+  ul.files { list-style: none; padding: 0; margin: 12px 0; }
+  ul.files li {
+    font-family: var(--mono);
+    font-size: 13.5px;
+    padding: 5px 12px;
+    border-left: 2px solid var(--line);
+    display: flex;
+    gap: 12px;
+    align-items: baseline;
+  }
+  .tag {
+    font-size: 11px;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    padding: 1px 8px;
+    border-radius: 999px;
+    flex: 0 0 auto;
+    font-family: var(--mono);
+  }
+  .tag.dir { background: rgba(124,156,255,.15); color: var(--accent); }
+  .tag.keep { background: rgba(92,214,169,.13); color: var(--accent-2); }
+  .tag.todo { background: rgba(240,176,114,.15); color: var(--warn); }
+  .path { color: var(--code-ink); word-break: break-all; }
+
+  /* Code blocks */
+  pre {
+    position: relative;
+    background: var(--code-bg);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 16px 18px;
+    overflow-x: auto;
+    margin: 14px 0;
+  }
+  .code-wrap { position: relative; }
+  .cmd-row { display: block; border-radius: 4px; }
+  .cmd-row.active { background: rgba(124,156,255,.08); }
+  .plain-row { display: block; }
+  .row-copy {
+    position: absolute;
+    right: 10px;
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--muted);
+    background: var(--panel-2);
+    border: 1px solid var(--line);
+    border-radius: 6px;
+    padding: 3px 9px;
+    cursor: pointer;
+    display: none;
+    z-index: 2;
+    transition: color .15s ease, border-color .15s ease;
+  }
+  .row-copy.show { display: block; }
+  .row-copy:hover { color: var(--accent); border-color: var(--accent); }
+  .row-copy.copied { color: var(--accent-2); border-color: var(--accent-2); }
+  pre code {
+    font-family: var(--mono);
+    font-size: 13px;
+    color: var(--code-ink);
+    line-height: 1.7;
+    white-space: pre;
+  }
+  code .cmt { color: #6f7a8d; font-style: italic; }
+  :not(pre) > code {
+    font-family: var(--mono);
+    font-size: 13px;
+    background: var(--panel-2);
+    padding: 2px 6px;
+    border-radius: 5px;
+    color: var(--code-ink);
+  }
+
+  /* Notes callout */
+  .callout {
+    border: 1px solid var(--line);
+    border-left: 3px solid var(--warn);
+    background: var(--panel);
+    border-radius: 10px;
+    padding: 18px 22px;
+    margin: 16px 0;
+  }
+  .callout ul { margin: 0; padding-left: 20px; }
+  .callout li { margin: 8px 0; font-size: 14.5px; }
+
+  .done {
+    text-align: center;
+    color: var(--accent-2);
+    font-family: var(--mono);
+    border: 1px dashed var(--line);
+    border-radius: 10px;
+    padding: 16px;
+    margin-top: 32px;
+  }
+  footer {
+    text-align: center;
+    color: var(--muted);
+    font-size: 12.5px;
+    margin-top: 40px;
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <p class="kicker">Setup Output</p>
+    <h1>Agentic Hermes MVP</h1>
+    <dl class="meta">
+      <dt>Bundle</dt><dd>/Users/box/Desktop/hermes-agentic-work-system /output/agentic-mvp</dd>
+      <dt>Workspace</dt><dd>/Users/box/HermesWork/agentic-mvp</dd>
+      <dt>Hermes home</dt><dd>/Users/box/.hermes</dd>
+    </dl>
+  </header>
+
+  <nav class="toc">
+    <h2>Contents</h2>
+    <ol>
+      <li><a href="#s1">Create workspace directory structure</a></li>
+      <li><a href="#s2">Copy context files, templates, sample ticket</a></li>
+      <li><a href="#s3">Stage profile SOUL.md files</a></li>
+      <li><a href="#s4">Hermes commands to run yourself</a></li>
+      <li><a href="#s5">Validation plan</a></li>
+      <li><a href="#notes">Notes</a></li>
+    </ol>
+  </nav>
+
+  <!-- 1 -->
+  <section id="s1">
+    <h2 class="sec"><span class="num">1</span>Create workspace directory structure</h2>
+    <ul class="files">
+      <li><span class="tag dir">dir</span><span class="path">~/HermesWork/agentic-mvp/</span></li>
+      <li><span class="tag dir">dir</span><span class="path">~/HermesWork/agentic-mvp/tickets</span></li>
+      <li><span class="tag dir">dir</span><span class="path">~/HermesWork/agentic-mvp/workspaces</span></li>
+      <li><span class="tag dir">dir</span><span class="path">~/HermesWork/agentic-mvp/outputs</span></li>
+      <li><span class="tag dir">dir</span><span class="path">~/HermesWork/agentic-mvp/templates</span></li>
+      <li><span class="tag dir">dir</span><span class="path">~/HermesWork/agentic-mvp/scripts</span></li>
+    </ul>
+  </section>
+
+  <!-- 2 -->
+  <section id="s2">
+    <h2 class="sec"><span class="num">2</span>Copy context files, templates, and sample ticket</h2>
+    <ul class="files">
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/README.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/AGENTS.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/HERMES.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/CLAUDE.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/TEAM.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/WORKFLOW.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/MEMORY_POLICY.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/REVIEW_CHECKLIST.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/CARD_TEMPLATE.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/HANDOFF_TEMPLATE.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/templates/CARD_TEMPLATE.md</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/templates/HANDOFF_TEMPLATE.md</span></li>
+      <li><span class="tag dir">dir</span><span class="path">~/HermesWork/agentic-mvp/tickets/TICKET-0001</span></li>
+      <li><span class="tag keep">keep</span><span class="path">~/HermesWork/agentic-mvp/tickets/TICKET-0001/TASK.md</span></li>
+    </ul>
+  </section>
+
+  <!-- 3 -->
+  <section id="s3">
+    <h2 class="sec"><span class="num">3</span>Stage profile SOUL.md files</h2>
+    <p class="note">SOUL.md lives at <code>/Users/box/.hermes/profiles/&lt;name&gt;/SOUL.md</code>. Profiles must be created by Hermes first (see the commands in step 4).</p>
+    <ul class="files">
+      <li><span class="tag keep">chief</span><span class="path">keep existing SOUL.md (use <code>--overwrite-soul</code> to replace)</span></li>
+      <li><span class="tag todo">researcher</span><span class="path">profile dir not found yet — copy SOUL.md after creating the profile</span></li>
+      <li><span class="tag todo">builder</span><span class="path">profile dir not found yet — copy SOUL.md after creating the profile</span></li>
+      <li><span class="tag todo">reviewer</span><span class="path">profile dir not found yet — copy SOUL.md after creating the profile</span></li>
+    </ul>
+    <p class="note">After creating each profile, run (one per missing role):</p>
+    <pre><code>cp "/Users/box/Desktop/hermes-agentic-work-system /output/profiles/researcher/SOUL.md" "/Users/box/.hermes/profiles/researcher/SOUL.md"
+cp "/Users/box/Desktop/hermes-agentic-work-system /output/profiles/builder/SOUL.md"    "/Users/box/.hermes/profiles/builder/SOUL.md"
+cp "/Users/box/Desktop/hermes-agentic-work-system /output/profiles/reviewer/SOUL.md"   "/Users/box/.hermes/profiles/reviewer/SOUL.md"</code></pre>
+  </section>
+
+  <!-- 4 -->
+  <section id="s4">
+    <h2 class="sec"><span class="num">4</span>Hermes commands to run yourself</h2>
+    <p class="note">This script does <strong>not</strong> run these — copy and run them yourself.</p>
+
+    <h3 class="sub">4a) Create the four profiles (cloned deterministically from 'default')</h3>
+    <p class="note">Use <code>--clone-from default</code> (not <code>--clone</code>): <code>--clone</code> copies the <em>active</em> profile, which is nondeterministic. <code>--clone-from default</code> is explicit (and implies <code>--clone</code>).</p>
+    <pre><code>hermes profile create chief      --clone-from default --description "Orchestrates Kanban work, clarifies requests, creates tickets, assigns profiles, tracks status, manages handoffs, and archives final outcomes."
+hermes profile create researcher --clone-from default --description "Researches, analyzes, compares options, diagnoses problems, studies documentation, and produces briefs or recommendations for assigned tickets."
+hermes profile create builder    --clone-from default --description "Creates requested artifacts for assigned tickets, including code, scripts, documents, plans, summaries, configuration, and automation."
+hermes profile create reviewer   --clone-from default --description "Reviews completed work against acceptance criteria, checks quality and risks, requests revisions, and approves work for completion."</code></pre>
+    <p class="note">The <code>--description</code> is how the Kanban orchestrator routes a task to the right role by name, so keep it accurate per profile.</p>
+    <p class="note">If no default profile is configured, create without <code>--clone</code> and run setup:</p>
+    <pre><code>hermes profile create chief
+hermes profile create researcher
+hermes profile create builder
+hermes profile create reviewer
+chief setup
+researcher setup
+builder setup
+reviewer setup</code></pre>
+
+    <h3 class="sub">4b) Confirm profile paths (use the displayed dir for SOUL.md)</h3>
+    <pre><code>hermes profile show chief
+hermes profile show researcher
+hermes profile show builder
+hermes profile show reviewer</code></pre>
+    <p class="note">Then place each SOUL.md (if not already staged in step 3):</p>
+    <pre><code>cp "/Users/box/Desktop/hermes-agentic-work-system /output/profiles/chief/SOUL.md"      "/Users/box/.hermes/profiles/chief/SOUL.md"
+cp "/Users/box/Desktop/hermes-agentic-work-system /output/profiles/researcher/SOUL.md" "/Users/box/.hermes/profiles/researcher/SOUL.md"
+cp "/Users/box/Desktop/hermes-agentic-work-system /output/profiles/builder/SOUL.md"    "/Users/box/.hermes/profiles/builder/SOUL.md"
+cp "/Users/box/Desktop/hermes-agentic-work-system /output/profiles/reviewer/SOUL.md"   "/Users/box/.hermes/profiles/reviewer/SOUL.md"</code></pre>
+
+    <h3 class="sub">4c) Point each profile at the MVP workspace</h3>
+    <pre><code>chief      config set terminal.cwd "/Users/box/HermesWork/agentic-mvp"
+researcher config set terminal.cwd "/Users/box/HermesWork/agentic-mvp"
+builder    config set terminal.cwd "/Users/box/HermesWork/agentic-mvp"
+reviewer   config set terminal.cwd "/Users/box/HermesWork/agentic-mvp"</code></pre>
+
+    <h3 class="sub">4d) Configure Chief as the Kanban orchestrator + WIP limits</h3>
+    <p class="note">Chief builds the dependency graph, so its CLI platform must load the documented <code>hermes-cli</code> and <code>kanban</code> toolsets. Do not use the nonexistent name <code>hermes</code>.</p>
+    <pre><code>chief config set kanban.orchestrator_profile chief
+chief config set kanban.default_assignee chief
+chief config set kanban.auto_decompose false   <span class="cmt"># explicit graph (may already be false)</span>
+chief config set kanban.max_in_progress 3      <span class="cmt"># PRD WIP target (default: unlimited)</span></code></pre>
+    <p class="note">Toolsets are LISTS. Edit the file directly and ensure both lists contain:</p>
+    <pre><code>chief config path        <span class="cmt"># -> ~/.hermes/profiles/chief/config.yaml</span>
+<span class="cmt">#   toolsets:
+#     - hermes-cli
+#     - kanban
+#   platform_toolsets:
+#     cli:
+#       - hermes-cli
+#       - kanban</span></code></pre>
+    <p class="note">For another gateway surface, add its matching Hermes toolset and <code>kanban</code> under that platform too (for example: <code>hermes-telegram</code> + <code>kanban</code>).</p>
+
+    <h3 class="sub">4e) Verify the bundled Kanban skills</h3>
+    <p class="note">Restore a required skill only when it is absent:</p>
+    <pre><code>chief skills list      | grep kanban-orchestrator || chief skills reset kanban-orchestrator --restore --yes
+researcher skills list | grep kanban-worker       || researcher skills reset kanban-worker --restore --yes
+builder skills list    | grep kanban-worker       || builder skills reset kanban-worker --restore --yes
+reviewer skills list   | grep kanban-worker       || reviewer skills reset kanban-worker --restore --yes</code></pre>
+    <p class="note">Chief hosts the gateway (<code>chief gateway start</code> below), so Chief's <code>kanban.*</code> block governs the dispatcher.</p>
+
+    <h3 class="sub">4f) Initialize Kanban and create the board</h3>
+    <pre><code>hermes kanban init
+hermes kanban boards create agentic-mvp \
+  --name "Agentic Hermes MVP" \
+  --description "Generic agentic work system using chief, researcher, builder, and reviewer profiles." \
+  --switch
+hermes kanban boards list
+hermes kanban boards show</code></pre>
+
+    <h3 class="sub">4g) Start the gateway dispatcher (as chief — the gateway host)</h3>
+    <pre><code>chief gateway start</code></pre>
+    <p class="note">Chief hosts the gateway, so its <code>kanban.*</code> config governs the dispatcher. One-shot dispatch for debugging:</p>
+    <pre><code>hermes kanban dispatch --max 1</code></pre>
+
+    <h3 class="sub">4h) Create an executable validation graph</h3>
+    <p class="note">Chief creates one task per role and links them with <code>--parent</code>. The dispatcher promotes a child <code>todo -&gt; ready</code> only when ALL its parents are <code>done</code>, so the pipeline advances automatically with no human in the loop between stages. This simple document request skips research; its related cards share one ticket-isolated workspace so artifacts pass between roles.</p>
+    <pre><code>command -v jq
+TICKET_WS="/Users/box/HermesWork/agentic-mvp/workspaces/TICKET-0001"
+mkdir -p "$TICKET_WS"
+
+BUILD=$(hermes kanban create "Build: Agentic Hermes MVP overview" \
+  --assignee builder \
+  --body "Type: document; Stage: build; Goal: Create a one-page Markdown overview of the Agentic Hermes MVP; Desired Output: outputs/hello-hermes.md; Acceptance Criteria: explain chief, researcher, builder, and reviewer; explain build -> review -> finalize; clear structure; no placeholders; Workspace: $TICKET_WS; Done Means: artifact and review handoff completed." \
+  --workspace "dir:$TICKET_WS" --json | jq -r .id)
+
+REVIEW=$(hermes kanban create "Review: Agentic Hermes MVP overview" \
+  --assignee reviewer --parent "$BUILD" \
+  --body "Type: review; Stage: review; Goal: Verify outputs/hello-hermes.md; Acceptance Criteria: all four roles explained; dependency graph accurate; clear and placeholder-free; record PASS, PASS_WITH_NOTES, or NEEDS_REVISION in REVIEW.md; Workspace: $TICKET_WS." \
+  --workspace "dir:$TICKET_WS" --json | jq -r .id)
+
+FINALIZE=$(hermes kanban create "Finalize: Agentic Hermes MVP overview" \
+  --assignee chief --parent "$REVIEW" \
+  --body "Type: finalize; Stage: finalize; Goal: Close after an accepted review; Acceptance Criteria: record output path and review verdict; recommend memory only if warranted; Workspace: $TICKET_WS." \
+  --workspace "dir:$TICKET_WS" --json | jq -r .id)
+
+hermes kanban show "$BUILD"
+hermes kanban show "$REVIEW"
+hermes kanban show "$FINALIZE"</code></pre>
+    <p class="note">Watch the board and dispatcher:</p>
+    <pre><code>hermes kanban watch
+hermes kanban list
+hermes kanban stats
+hermes kanban diagnostics
+hermes kanban runs "$BUILD"
+hermes kanban runs "$REVIEW"</code></pre>
+
+    <h3 class="sub">4i) Operator actions (only for blocked cards / finalize)</h3>
+    <p class="note">Stages advance on their own via <code>kanban_complete</code>. The operator only steps in for blocked cards or to archive a finished one:</p>
+    <pre><code>hermes kanban unblock &lt;id&gt;                 <span class="cmt"># resume after a worker blocked for input</span>
+hermes kanban archive &lt;id&gt;                 <span class="cmt"># archive a completed card</span></code></pre>
+    <p class="note">For NEEDS_REVISION, reviewer comments and blocks the existing review. Chief creates a revision with BUILD as parent, links REVISION as another parent of REVIEW, then unblocks that same REVIEW after REVISION completes:</p>
+    <pre><code>REVISION=$(hermes kanban create "Revise: Agentic Hermes MVP overview" --assignee builder --parent "$BUILD" --body "Address review comments in the shared ticket workspace." --workspace "dir:$TICKET_WS" --json | jq -r .id)
+hermes kanban link "$REVISION" "$REVIEW"
+hermes kanban unblock "$REVIEW"   <span class="cmt"># run after REVISION is done</span></code></pre>
+  </section>
+
+  <!-- 5 -->
+  <section id="s5">
+    <h2 class="sec"><span class="num">5</span>Validation plan</h2>
+    <p class="note">Run after the commands above.</p>
+    <pre><code>hermes profile list
+hermes profile show chief
+hermes profile show researcher
+hermes profile show builder
+hermes profile show reviewer
+ls -la "/Users/box/HermesWork/agentic-mvp"
+ls -la "/Users/box/HermesWork/agentic-mvp/templates"
+hermes kanban boards list
+hermes kanban boards show
+hermes kanban stats</code></pre>
+  </section>
+
+  <!-- Notes -->
+  <section id="notes">
+    <h2 class="sec">Notes</h2>
+    <div class="callout">
+      <ul>
+        <li>This script ran <strong>NO</strong> hermes commands. Copy the commands above to run them.</li>
+        <li><code>--description</code> on <code>hermes profile create</code> IS supported and is used by the Kanban orchestrator to route tasks to roles by name. <code>--clone-from default</code> is the deterministic clone (plain <code>--clone</code> copies the active profile).</li>
+        <li>SOUL.md is read from <code>HERMES_HOME</code> (<code>/Users/box/.hermes</code>); Hermes does not read SOUL.md from the current working directory.</li>
+        <li>Routing is a DEPENDENCY GRAPH: chief creates linked role-tasks (<code>kanban_create</code> + <code>--parent</code>) and the dispatcher promotes <code>todo -&gt; ready</code> when all parents are <code>done</code>. Workers are task-scoped: they terminate their OWN card with <code>kanban_complete</code> (or <code>kanban_block</code> for a blocker / review gate) and CANNOT reassign or archive cards. Artifact files are written in ADDITION to the tool calls. Only chief/operator finalizes and archives.</li>
+        <li>Acceptance criteria live in the card <code>--body</code> and in <code>kanban_complete</code> metadata (read downstream via <code>kanban_show</code>); TASK.md files are a human mirror only.</li>
+        <li>One request/ticket gets one isolated workspace shared by its related role cards. Unrelated requests never share a workspace or the project root.</li>
+        <li>WIP: set <code>kanban.max_in_progress: 3</code> (per the PRD) and optionally <code>max_in_progress_per_profile</code> on the chief profile (step 4d).</li>
+        <li>No secrets are written by this script. Keep API keys in <code>~/.hermes/.env</code>.</li>
+      </ul>
+    </div>
+  </section>
+
+  <div class="done">✓ Done. Local scaffolding is in place; Hermes commands are printed above.</div>
+
+  <footer>Generated from script-output.md · Agentic Hermes MVP setup</footer>
+
+</div>
+
+<script>
+  function escapeHtml(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  // Flatten a <code> element's children into physical lines.
+  // Each line is an array of { text, comment } segments.
+  function toLines(code) {
+    var lines = [[]];
+    function push(text, isComment) {
+      var parts = text.split('\n');
+      for (var i = 0; i < parts.length; i++) {
+        if (i > 0) lines.push([]);
+        if (parts[i] !== '') lines[lines.length - 1].push({ text: parts[i], comment: isComment });
+      }
+    }
+    code.childNodes.forEach(function (node) {
+      if (node.nodeType === 3) {
+        push(node.nodeValue, false);
+      } else if (node.nodeType === 1) {
+        push(node.textContent, node.classList && node.classList.contains('cmt'));
+      }
+    });
+    return lines;
+  }
+
+  function lineCodeText(line) {
+    return line.filter(function (s) { return !s.comment; })
+               .map(function (s) { return s.text; }).join('');
+  }
+  function lineFullText(line) {
+    return line.map(function (s) { return s.text; }).join('');
+  }
+  function lineHTML(line) {
+    return line.map(function (s) {
+      return s.comment ? '<span class="cmt">' + escapeHtml(s.text) + '</span>' : escapeHtml(s.text);
+    }).join('');
+  }
+
+  document.querySelectorAll('pre').forEach(function (pre) {
+    var code = pre.querySelector('code');
+    if (!code) return;
+
+    var lines = toLines(code);
+
+    // Group physical lines into logical commands: a code line whose code
+    // portion ends with '\' continues into the following line.
+    var rows = [];          // { type: 'cmd'|'plain', lines: [...] }
+    var i = 0;
+    while (i < lines.length) {
+      var codeText = lineCodeText(lines[i]).trim();
+      if (codeText === '') { rows.push({ type: 'plain', lines: [lines[i]] }); i++; continue; }
+      var group = [lines[i]];
+      while (lineCodeText(lines[i]).replace(/\s+$/, '').slice(-1) === '\\' && i + 1 < lines.length) {
+        i++;
+        group.push(lines[i]);
+      }
+      rows.push({ type: 'cmd', lines: group });
+      i++;
+    }
+
+    // Rebuild the code element as one element per row.
+    code.innerHTML = '';
+    rows.forEach(function (row) {
+      var el = document.createElement('span');
+      el.className = row.type === 'cmd' ? 'cmd-row' : 'plain-row';
+      el.innerHTML = row.lines.map(lineHTML).join('\n') + (row === rows[rows.length - 1] ? '' : '\n');
+      if (row.type === 'cmd') {
+        el.dataset.copy = row.lines.map(lineFullText).join('\n');
+      }
+      code.appendChild(el);
+    });
+
+    // Wrap <pre> so the floating button stays pinned to the visible edge.
+    var wrap = document.createElement('div');
+    wrap.className = 'code-wrap';
+    pre.parentNode.insertBefore(wrap, pre);
+    wrap.appendChild(pre);
+
+    var btn = document.createElement('button');
+    btn.className = 'row-copy';
+    btn.type = 'button';
+    btn.textContent = 'Copy';
+    wrap.appendChild(btn);
+
+    var current = null, resetTimer = null;
+
+    function showFor(rowEl) {
+      current = rowEl;
+      var top = rowEl.getBoundingClientRect().top - wrap.getBoundingClientRect().top;
+      btn.style.top = (top + 4) + 'px';
+      btn.classList.add('show');
+      if (!btn.classList.contains('copied')) btn.textContent = 'Copy';
+    }
+
+    wrap.querySelectorAll('.cmd-row').forEach(function (rowEl) {
+      rowEl.addEventListener('mouseenter', function () {
+        wrap.querySelectorAll('.cmd-row').forEach(function (r) { r.classList.remove('active'); });
+        rowEl.classList.add('active');
+        showFor(rowEl);
+      });
+    });
+
+    wrap.addEventListener('mouseleave', function () {
+      btn.classList.remove('show');
+      wrap.querySelectorAll('.cmd-row').forEach(function (r) { r.classList.remove('active'); });
+      current = null;
+    });
+
+    btn.addEventListener('click', function () {
+      if (!current) return;
+      var text = current.dataset.copy;
+      var done = function () {
+        btn.textContent = 'Copied';
+        btn.classList.add('copied');
+        clearTimeout(resetTimer);
+        resetTimer = setTimeout(function () {
+          btn.textContent = 'Copy';
+          btn.classList.remove('copied');
+        }, 1500);
+      };
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done, fallback);
+      } else { fallback(); }
+      function fallback() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (e) {}
+        document.body.removeChild(ta);
+      }
+    });
+  });
+</script>
+</body>
+</html>

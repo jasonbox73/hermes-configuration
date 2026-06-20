@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agentic Hermes MVP — Field Manual</title>
+<style>
+  :root{
+    --bg:#080b0a; --bg2:#0b0f0d; --panel:#0f1512; --panel2:#131a16; --line:#1f2a23;
+    --ink:#cfe3d6; --muted:#7f9587; --dim:#5b6b62;
+    --green:#5ef38c; --amber:#ffb454; --cyan:#57d6e6; --pink:#ff6e9c; --violet:#b58cff;
+    --code:#070a09; --radius:12px;
+    --mono:"SF Mono",ui-monospace,"JetBrains Mono",Menlo,Consolas,monospace;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  }
+  *{box-sizing:border-box}
+  html{scroll-behavior:smooth}
+  body{
+    margin:0; background:
+      radial-gradient(1200px 600px at 70% -10%, rgba(94,243,140,.06), transparent 60%),
+      radial-gradient(900px 500px at 0% 10%, rgba(87,214,230,.05), transparent 55%),
+      var(--bg);
+    color:var(--ink); font:16px/1.65 var(--sans); -webkit-font-smoothing:antialiased;
+  }
+  /* CRT scanlines + vignette overlay */
+  body::before{
+    content:""; position:fixed; inset:0; z-index:9999; pointer-events:none;
+    background:repeating-linear-gradient(to bottom, rgba(0,0,0,0) 0 2px, rgba(0,0,0,.18) 2px 3px);
+    mix-blend-mode:multiply; opacity:.5;
+  }
+  body::after{
+    content:""; position:fixed; inset:0; z-index:9998; pointer-events:none;
+    box-shadow:inset 0 0 220px rgba(0,0,0,.7);
+  }
+  a{color:var(--cyan); text-decoration:none}
+  a:hover{text-decoration:underline; text-decoration-style:dotted}
+  .wrap{display:grid; grid-template-columns:268px 1fr; max-width:1240px; margin:0 auto}
+  /* ---------- Sidebar ---------- */
+  nav.toc{
+    position:sticky; top:0; align-self:start; height:100vh; overflow:auto;
+    padding:26px 18px; border-right:1px solid var(--line);
+    background:linear-gradient(180deg,var(--panel),var(--bg2));
+  }
+  .brandmark{font-family:var(--mono); font-weight:700; font-size:15px; color:var(--green);
+    letter-spacing:.04em; line-height:1.3}
+  .brandmark small{display:block; color:var(--dim); font-weight:400; font-size:11px; margin-top:4px}
+  nav.toc h2{font-family:var(--mono); font-size:11px; letter-spacing:.18em; text-transform:uppercase;
+    color:var(--dim); margin:22px 0 8px}
+  nav.toc a{display:block; color:var(--ink); padding:5px 10px; border-radius:7px; font-size:13.5px;
+    font-family:var(--mono)}
+  nav.toc a::before{content:"› "; color:var(--dim)}
+  nav.toc a:hover{background:var(--panel2); color:var(--green); text-decoration:none}
+  /* ---------- Main ---------- */
+  main{padding:34px 46px 96px; min-width:0}
+  .prompt{font-family:var(--mono); color:var(--dim); font-size:13px; margin-bottom:6px}
+  .prompt b{color:var(--green)}
+  .cursor{display:inline-block; width:9px; height:16px; background:var(--green); margin-left:2px;
+    vertical-align:-2px; animation:blink 1.05s steps(1) infinite}
+  @keyframes blink{50%{opacity:0}}
+  header.hero h1{font-family:var(--mono); font-size:32px; margin:6px 0 10px; letter-spacing:-.01em;
+    color:#eafff1; text-shadow:0 0 18px rgba(94,243,140,.25)}
+  header.hero p.lead{color:var(--muted); font-size:17px; margin:0 0 16px; max-width:72ch}
+  .asciibar{font-family:var(--mono); color:var(--green); font-size:13px; margin:14px 0 6px; letter-spacing:1px}
+  .asciibar .lbl{color:var(--dim)}
+  .badges{display:flex; flex-wrap:wrap; gap:8px; margin:16px 0 26px}
+  .badge{font-family:var(--mono); background:var(--panel); border:1px solid var(--line);
+    padding:5px 12px; border-radius:6px; font-size:12.5px; color:var(--muted)}
+  .badge b{color:var(--green)}
+  section{margin:0 0 46px; scroll-margin-top:18px}
+  section>h2{font-family:var(--mono); font-size:21px; margin:0 0 16px; color:#eafff1;
+    padding-bottom:9px; border-bottom:1px dashed var(--line)}
+  section>h2::before{content:"$ "; color:var(--green)}
+  h3{font-family:var(--mono); font-size:16px; margin:26px 0 10px; color:var(--cyan)}
+  p{margin:0 0 14px}
+  .card{background:linear-gradient(180deg,var(--panel),var(--bg2)); border:1px solid var(--line);
+    border-radius:var(--radius); padding:18px 20px; margin:0 0 16px}
+  table{width:100%; border-collapse:collapse; margin:6px 0 18px; font-size:14.5px}
+  th,td{text-align:left; padding:10px 12px; border-bottom:1px solid var(--line); vertical-align:top}
+  th{font-family:var(--mono); color:var(--muted); font-weight:600; font-size:11.5px;
+    letter-spacing:.08em; text-transform:uppercase}
+  code{font-family:var(--mono); font-size:13px; background:#0c120e; padding:2px 6px; border-radius:5px;
+    color:var(--green); border:1px solid var(--line)}
+  pre{background:var(--code); border:1px solid var(--line); border-radius:10px; padding:16px 18px;
+    overflow:auto; margin:0 0 16px; position:relative}
+  pre::before{content:"▌ shell"; position:absolute; top:8px; right:12px; font-family:var(--mono);
+    font-size:10px; letter-spacing:.12em; color:var(--dim)}
+  pre code{background:none; border:none; padding:0; color:#bfe9cd; font-size:13px; line-height:1.75}
+  .cmt{color:#5d6f64} .tok{color:var(--cyan)} .flag{color:var(--amber)} .str{color:var(--green)}
+  /* ---------- Agent cards ---------- */
+  .agents{display:grid; grid-template-columns:repeat(2,1fr); gap:18px; margin-top:6px}
+  .agent-card{position:relative; display:grid; grid-template-columns:150px 1fr; gap:14px;
+    background:linear-gradient(180deg,var(--panel),var(--bg2)); border:1px solid var(--line);
+    border-radius:14px; padding:16px; overflow:hidden}
+  .agent-card::before{content:""; position:absolute; inset:0; pointer-events:none;
+    background:radial-gradient(220px 160px at 18% 20%, color-mix(in oklab, var(--c) 14%, transparent), transparent 70%)}
+  .agent-card::after{content:""; position:absolute; left:0; top:0; bottom:0; width:3px; background:var(--c);
+    box-shadow:0 0 14px var(--c)}
+  .agent-portrait{display:grid; place-items:center}
+  .agent-svg{width:140px; height:auto; color:var(--c); filter:drop-shadow(0 0 7px color-mix(in oklab,var(--c) 55%, transparent))}
+  .agent-meta{min-width:0}
+  .agent-handle{font-family:var(--mono); font-size:12px; color:var(--c); letter-spacing:.06em}
+  .agent-meta h3{margin:2px 0 2px; font-family:var(--mono); font-size:18px; color:#eafff1}
+  .agent-tag{color:var(--muted); font-size:13px; margin:0 0 10px}
+  .traits{list-style:none; padding:0; margin:0 0 10px; font-size:13px; color:var(--ink)}
+  .traits li{padding:2px 0} .traits li::before{content:"▪ "; color:var(--c)}
+  .soul-link{font-family:var(--mono); font-size:12.5px}
+  /* ---------- Diagrams ---------- */
+  .diagram{background:var(--code); border:1px solid var(--line); border-radius:12px; padding:16px;
+    overflow-x:auto; margin:0 0 14px}
+  .diagram svg{display:block; min-width:680px; width:100%; height:auto}
+  .dcap{font-family:var(--mono); font-size:11.5px; color:var(--dim); letter-spacing:.1em;
+    text-transform:uppercase; margin:0 0 10px}
+  .legend{display:flex; flex-wrap:wrap; gap:14px; font-family:var(--mono); font-size:12px; color:var(--muted); margin:2px 0 18px}
+  .legend span{display:inline-flex; align-items:center; gap:6px}
+  .swatch{width:11px; height:11px; border-radius:3px; display:inline-block}
+  text{font-family:var(--mono)}
+  /* ---------- File list ---------- */
+  ul.files{list-style:none; padding:0; margin:0}
+  ul.files li{padding:8px 0; border-bottom:1px solid var(--line); display:flex; gap:12px; align-items:baseline; font-family:var(--mono); font-size:13.5px}
+  ul.files li:last-child{border-bottom:none}
+  ul.files .ic{flex:0 0 16px; color:var(--green)}
+  ul.files .desc{color:var(--muted); font-size:12.5px; font-family:var(--sans)}
+  .pill{display:inline-block; font-family:var(--mono); font-size:10.5px; padding:2px 8px; border-radius:999px;
+    background:#0c120e; color:var(--muted); border:1px solid var(--line); margin-left:6px}
+  /* ---------- Notes / steps ---------- */
+  .note{border-left:3px solid var(--amber); background:rgba(255,180,84,.07); padding:12px 16px; border-radius:0 10px 10px 0; margin:0 0 16px}
+  .note b{color:var(--amber)}
+  .ok{border-left:3px solid var(--green); background:rgba(94,243,140,.07); padding:12px 16px; border-radius:0 10px 10px 0; margin:0 0 16px}
+  .ok b{color:var(--green)}
+  .step{display:flex; gap:14px; margin:0 0 10px}
+  .step .n{flex:0 0 28px; height:28px; width:28px; border-radius:7px; background:var(--green); color:#06150c;
+    font-weight:700; font-family:var(--mono); display:grid; place-items:center; font-size:14px;
+    box-shadow:0 0 12px rgba(94,243,140,.4)}
+  .step .b{padding-top:3px}
+  footer{color:var(--dim); font-size:12.5px; font-family:var(--mono); border-top:1px dashed var(--line);
+    padding-top:18px; margin-top:40px}
+  @media (prefers-reduced-motion: reduce){
+    .cursor{animation:none}
+  }
+  @media (max-width:980px){
+    .wrap{grid-template-columns:1fr}
+    nav.toc{position:static; height:auto; border-right:none; border-bottom:1px solid var(--line)}
+    main{padding:26px 18px 72px}
+    .agents{grid-template-columns:1fr}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ===================== SIDEBAR ===================== -->
+  <nav class="toc">
+    <div class="brandmark">HERMES://agentic-mvp
+      <small>field manual · v1</small>
+    </div>
+    <h2>sections</h2>
+    <a href="#overview">overview</a>
+    <a href="#agents">the agents</a>
+    <a href="#lifecycle">lifecycle</a>
+    <a href="#routing">routing flows</a>
+    <a href="#dispatch">dispatch model</a>
+    <a href="#files">generated files</a>
+    <a href="#quickstart">quick start</a>
+    <a href="#commands">hermes commands</a>
+    <a href="#validation">validation</a>
+    <a href="#caveats">caveats</a>
+    <a href="#docs">docs</a>
+    <h2>key files</h2>
+    <a href="./SUMMARY.md">SUMMARY.md</a>
+    <a href="./agentic-mvp/scripts/setup-agentic-hermes-mvp.sh">setup.sh</a>
+    <a href="./agentic-mvp/README.md">README.md</a>
+  </nav>
+
+  <!-- ===================== MAIN ===================== -->
+  <main>
+    <header class="hero" id="top">
+      <div class="prompt"><b>jason@hermes</b>:~/HermesWork/agentic-mvp$ cat field-manual<span class="cursor"></span></div>
+      <h1>Agentic Hermes MVP — Work System</h1>
+      <p class="lead">Four agents. One Kanban board as the source of truth. Every request becomes a
+      ticket and moves from vague intent to a reviewed artifact — research, documents, software,
+      troubleshooting, planning, automation.</p>
+      <div class="asciibar"><span class="lbl">scaffold</span> [██████████████████████] 100% — 20 files written</div>
+      <div class="badges">
+        <span class="badge"><b>4</b> profiles</span>
+        <span class="badge"><b>1</b> board · agentic-mvp</span>
+        <span class="badge"><b>20</b> generated files</span>
+        <span class="badge">setup.sh <b>prints</b> commands — never runs hermes</span>
+      </div>
+    </header>
+
+    <!-- OVERVIEW -->
+    <section id="overview">
+      <h2>overview</h2>
+      <p>Every user request becomes a Kanban ticket that travels a generic lifecycle. The board is
+      the source of truth — agent memory is not. Each ticket gets its own isolated workspace so
+      unrelated work never cross-contaminates.</p>
+      <div class="card" style="font-family:var(--mono); color:var(--ink)">
+        <span style="color:var(--amber)">Capture</span> → <span style="color:var(--amber)">Specify</span>
+        → <span style="color:var(--cyan)">Research</span> → <span style="color:var(--green)">Build</span>
+        → <span style="color:var(--pink)">Review</span> → <span style="color:var(--amber)">Revise</span>
+        → <span style="color:var(--amber)">Done</span> → <span style="color:var(--amber)">Archive</span>
+      </div>
+      <div class="ok"><b>NOTE</b> — the setup script does <b>not</b> execute any <code>hermes</code>
+      command. It scaffolds local files and <b>prints</b> every Hermes command for you to run by hand.</div>
+    </section>
+
+    <!-- AGENTS -->
+    <section id="agents">
+      <h2>the agents</h2>
+      <p>Each profile has its own identity file at <code>~/.hermes/profiles/&lt;name&gt;/SOUL.md</code>,
+      staged for you under <a href="./profiles/">profiles/</a>.</p>
+      <div class="agents">
+
+        <!-- CHIEF -->
+        <article class="agent-card" style="--c:var(--amber)">
+          <div class="agent-portrait">
+            <svg class="agent-svg" viewBox="0 0 240 280" role="img" aria-label="The Chief — a commanding robot wearing a crown, with an orchestration-hub emblem">
+              <ellipse cx="120" cy="152" rx="94" ry="112" fill="currentColor" opacity=".05"/>
+              <!-- crown -->
+              <path d="M90 54 L99 38 L110 52 L120 34 L130 52 L141 38 L150 54 Z" fill="currentColor" opacity=".95"/>
+              <circle cx="120" cy="32" r="3.5" fill="currentColor"/>
+              <!-- head -->
+              <rect x="68" y="52" width="104" height="86" rx="20" fill="#0b0f0d" stroke="currentColor" stroke-width="3"/>
+              <!-- visor -->
+              <rect x="80" y="72" width="80" height="34" rx="11" fill="currentColor" opacity=".14"/>
+              <rect x="80" y="72" width="80" height="34" rx="11" fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- calm bar eyes -->
+              <rect x="96" y="86" width="18" height="6" rx="3" fill="currentColor"/>
+              <rect x="126" y="86" width="18" height="6" rx="3" fill="currentColor"/>
+              <!-- mouth grille -->
+              <g stroke="currentColor" stroke-width="2" opacity=".55"><line x1="104" y1="120" x2="136" y2="120"/></g>
+              <!-- neck + torso -->
+              <rect x="108" y="138" width="24" height="14" fill="currentColor" opacity=".4"/>
+              <path d="M60 252 Q60 170 120 160 Q180 170 180 252 Z" fill="currentColor" opacity=".08" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <!-- chest: orchestration hub -->
+              <circle cx="120" cy="206" r="30" fill="#0b0f0d" stroke="currentColor" stroke-width="2"/>
+              <g stroke="currentColor" stroke-width="2">
+                <line x1="120" y1="206" x2="120" y2="190"/><line x1="120" y1="206" x2="134" y2="198"/>
+                <line x1="120" y1="206" x2="134" y2="214"/><line x1="120" y1="206" x2="120" y2="222"/>
+                <line x1="120" y1="206" x2="106" y2="214"/><line x1="120" y1="206" x2="106" y2="198"/>
+              </g>
+              <g fill="currentColor"><circle cx="120" cy="206" r="4"/>
+                <circle cx="120" cy="190" r="3"/><circle cx="134" cy="198" r="3"/><circle cx="134" cy="214" r="3"/>
+                <circle cx="120" cy="222" r="3"/><circle cx="106" cy="214" r="3"/><circle cx="106" cy="198" r="3"/></g>
+              <g fill="currentColor"><circle cx="92" cy="250" r="3"/><circle cx="104" cy="250" r="3" opacity=".5"/><circle cx="116" cy="250" r="3" opacity=".3"/></g>
+            </svg>
+          </div>
+          <div class="agent-meta">
+            <div class="agent-handle">// chief</div>
+            <h3>The Chief</h3>
+            <p class="agent-tag">Operating manager · intake, routing &amp; archive</p>
+            <ul class="traits">
+              <li>Turns vague requests into clear tickets</li>
+              <li>Assigns the right profile, tracks blockers</li>
+              <li>Closes &amp; archives accepted work</li>
+            </ul>
+            <a class="soul-link" href="./profiles/chief/SOUL.md">▸ open SOUL.md</a>
+          </div>
+        </article>
+
+        <!-- RESEARCHER -->
+        <article class="agent-card" style="--c:var(--cyan)">
+          <div class="agent-portrait">
+            <svg class="agent-svg" viewBox="0 0 240 280" role="img" aria-label="The Researcher — a robot with a radar dish and lens eyes, holding a magnifying-glass emblem">
+              <ellipse cx="120" cy="152" rx="94" ry="112" fill="currentColor" opacity=".05"/>
+              <!-- radar antenna -->
+              <line x1="120" y1="34" x2="120" y2="52" stroke="currentColor" stroke-width="3"/>
+              <ellipse cx="120" cy="30" rx="12" ry="5" fill="none" stroke="currentColor" stroke-width="2.5"/>
+              <path d="M104 26 A22 22 0 0 1 148 30" fill="none" stroke="currentColor" stroke-width="1.5" opacity=".55"/>
+              <!-- head -->
+              <rect x="68" y="52" width="104" height="86" rx="20" fill="#0b0f0d" stroke="currentColor" stroke-width="3"/>
+              <rect x="80" y="72" width="80" height="34" rx="11" fill="currentColor" opacity=".14"/>
+              <rect x="80" y="72" width="80" height="34" rx="11" fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- lens eyes w/ crosshair -->
+              <circle cx="104" cy="89" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+              <circle cx="104" cy="89" r="2.5" fill="currentColor"/>
+              <circle cx="136" cy="89" r="9" fill="none" stroke="currentColor" stroke-width="2"/>
+              <line x1="136" y1="81" x2="136" y2="97" stroke="currentColor" stroke-width="1"/>
+              <line x1="128" y1="89" x2="144" y2="89" stroke="currentColor" stroke-width="1"/>
+              <g stroke="currentColor" stroke-width="2" opacity=".55"><line x1="104" y1="120" x2="136" y2="120"/></g>
+              <rect x="108" y="138" width="24" height="14" fill="currentColor" opacity=".4"/>
+              <path d="M60 252 Q60 170 120 160 Q180 170 180 252 Z" fill="currentColor" opacity=".08" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <!-- chest: magnifier over grid -->
+              <circle cx="120" cy="206" r="30" fill="#0b0f0d" stroke="currentColor" stroke-width="2"/>
+              <g stroke="currentColor" stroke-width="1" opacity=".35">
+                <line x1="104" y1="196" x2="136" y2="196"/><line x1="104" y1="206" x2="136" y2="206"/><line x1="104" y1="216" x2="136" y2="216"/>
+                <line x1="110" y1="190" x2="110" y2="222"/><line x1="120" y1="190" x2="120" y2="222"/><line x1="130" y1="190" x2="130" y2="222"/>
+              </g>
+              <circle cx="115" cy="201" r="11" fill="#0b0f0d" stroke="currentColor" stroke-width="2.5"/>
+              <line x1="123" y1="209" x2="132" y2="218" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>
+              <g fill="currentColor"><circle cx="92" cy="250" r="3"/><circle cx="104" cy="250" r="3" opacity=".5"/><circle cx="116" cy="250" r="3" opacity=".3"/></g>
+            </svg>
+          </div>
+          <div class="agent-meta">
+            <div class="agent-handle">// researcher</div>
+            <h3>The Researcher</h3>
+            <p class="agent-tag">Owns understanding · investigation &amp; analysis</p>
+            <ul class="traits">
+              <li>Separates facts from assumptions</li>
+              <li>Compares options, surfaces risks</li>
+              <li>Produces RESEARCH.md + recommendation</li>
+            </ul>
+            <a class="soul-link" href="./profiles/researcher/SOUL.md">▸ open SOUL.md</a>
+          </div>
+        </article>
+
+        <!-- BUILDER -->
+        <article class="agent-card" style="--c:var(--green)">
+          <div class="agent-portrait">
+            <svg class="agent-svg" viewBox="0 0 240 280" role="img" aria-label="The Builder — a robot wearing a hard hat with pixel eyes and a gear emblem">
+              <ellipse cx="120" cy="152" rx="94" ry="112" fill="currentColor" opacity=".05"/>
+              <!-- hard hat -->
+              <path d="M58 58 Q120 32 182 58" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/>
+              <rect x="115" y="38" width="10" height="16" rx="2" fill="currentColor"/>
+              <!-- head -->
+              <rect x="68" y="52" width="104" height="86" rx="20" fill="#0b0f0d" stroke="currentColor" stroke-width="3"/>
+              <rect x="80" y="72" width="80" height="34" rx="11" fill="currentColor" opacity=".14"/>
+              <rect x="80" y="72" width="80" height="34" rx="11" fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- pixel eyes -->
+              <rect x="97" y="82" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+              <rect x="102" y="87" width="4" height="4" fill="currentColor"/>
+              <rect x="129" y="82" width="14" height="14" rx="2" fill="none" stroke="currentColor" stroke-width="2"/>
+              <rect x="134" y="87" width="4" height="4" fill="currentColor"/>
+              <g stroke="currentColor" stroke-width="2" opacity=".55"><line x1="104" y1="120" x2="136" y2="120"/></g>
+              <rect x="108" y="138" width="24" height="14" fill="currentColor" opacity=".4"/>
+              <path d="M60 252 Q60 170 120 160 Q180 170 180 252 Z" fill="currentColor" opacity=".08" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <!-- chest: gear -->
+              <circle cx="120" cy="206" r="30" fill="#0b0f0d" stroke="currentColor" stroke-width="2"/>
+              <g transform="translate(120,206)" fill="currentColor">
+                <rect x="-3" y="-18" width="6" height="7"/>
+                <rect x="-3" y="-18" width="6" height="7" transform="rotate(45)"/>
+                <rect x="-3" y="-18" width="6" height="7" transform="rotate(90)"/>
+                <rect x="-3" y="-18" width="6" height="7" transform="rotate(135)"/>
+                <rect x="-3" y="-18" width="6" height="7" transform="rotate(180)"/>
+                <rect x="-3" y="-18" width="6" height="7" transform="rotate(225)"/>
+                <rect x="-3" y="-18" width="6" height="7" transform="rotate(270)"/>
+                <rect x="-3" y="-18" width="6" height="7" transform="rotate(315)"/>
+              </g>
+              <circle cx="120" cy="206" r="11" fill="#0b0f0d" stroke="currentColor" stroke-width="3"/>
+              <circle cx="120" cy="206" r="4" fill="currentColor"/>
+              <g fill="currentColor"><circle cx="92" cy="250" r="3"/><circle cx="104" cy="250" r="3" opacity=".5"/><circle cx="116" cy="250" r="3" opacity=".3"/></g>
+            </svg>
+          </div>
+          <div class="agent-meta">
+            <div class="agent-handle">// builder</div>
+            <h3>The Builder</h3>
+            <p class="agent-tag">Owns creation · code, docs, configs, plans</p>
+            <ul class="traits">
+              <li>Works only inside the assigned workspace</li>
+              <li>Ships BUILD.md · OUTPUT.md · HANDOFF.md</li>
+              <li>Never hides failed tests or gaps</li>
+            </ul>
+            <a class="soul-link" href="./profiles/builder/SOUL.md">▸ open SOUL.md</a>
+          </div>
+        </article>
+
+        <!-- REVIEWER -->
+        <article class="agent-card" style="--c:var(--pink)">
+          <div class="agent-portrait">
+            <svg class="agent-svg" viewBox="0 0 240 280" role="img" aria-label="The Reviewer — a skeptical robot framed by scan brackets with a shield-and-check emblem">
+              <ellipse cx="120" cy="152" rx="94" ry="112" fill="currentColor" opacity=".05"/>
+              <line x1="120" y1="34" x2="120" y2="52" stroke="currentColor" stroke-width="3"/>
+              <circle cx="120" cy="30" r="4" fill="currentColor"/>
+              <!-- scan brackets -->
+              <g stroke="currentColor" stroke-width="2.5" fill="none" opacity=".8">
+                <path d="M58 60 L58 50 L70 50"/><path d="M182 60 L182 50 L170 50"/>
+                <path d="M58 130 L58 140 L70 140"/><path d="M182 130 L182 140 L170 140"/>
+              </g>
+              <!-- head -->
+              <rect x="68" y="52" width="104" height="86" rx="20" fill="#0b0f0d" stroke="currentColor" stroke-width="3"/>
+              <rect x="80" y="72" width="80" height="34" rx="11" fill="currentColor" opacity=".14"/>
+              <rect x="80" y="72" width="80" height="34" rx="11" fill="none" stroke="currentColor" stroke-width="2"/>
+              <!-- skeptical slit eyes -->
+              <path d="M96 93 L114 85" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+              <path d="M126 85 L144 93" stroke="currentColor" stroke-width="5" stroke-linecap="round"/>
+              <g stroke="currentColor" stroke-width="2" opacity=".55"><line x1="106" y1="120" x2="134" y2="120"/></g>
+              <rect x="108" y="138" width="24" height="14" fill="currentColor" opacity=".4"/>
+              <path d="M60 252 Q60 170 120 160 Q180 170 180 252 Z" fill="currentColor" opacity=".08" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/>
+              <!-- chest: shield + check -->
+              <circle cx="120" cy="206" r="30" fill="#0b0f0d" stroke="currentColor" stroke-width="2"/>
+              <g transform="translate(120,205)">
+                <path d="M0 -16 L14 -10 L14 2 Q14 14 0 20 Q-14 14 -14 2 L-14 -10 Z" fill="none" stroke="currentColor" stroke-width="2.5"/>
+                <path d="M-6 0 L-1 6 L8 -6" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+              </g>
+              <g fill="currentColor"><circle cx="92" cy="250" r="3"/><circle cx="104" cy="250" r="3" opacity=".5"/><circle cx="116" cy="250" r="3" opacity=".3"/></g>
+            </svg>
+          </div>
+          <div class="agent-meta">
+            <div class="agent-handle">// reviewer</div>
+            <h3>The Reviewer</h3>
+            <p class="agent-tag">Quality gate · independent verification</p>
+            <ul class="traits">
+              <li>Checks artifacts vs. acceptance criteria</li>
+              <li>Never rubber-stamps; verifies the artifact</li>
+              <li>Verdict: PASS · PASS_WITH_NOTES · NEEDS_REVISION · BLOCKED</li>
+            </ul>
+            <a class="soul-link" href="./profiles/reviewer/SOUL.md">▸ open SOUL.md</a>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- LIFECYCLE DIAGRAM -->
+    <section id="lifecycle">
+      <h2>ticket lifecycle</h2>
+      <p>Not every ticket needs every stage, but this is the full pipeline. Each stage is color-coded
+      by the profile that owns it.</p>
+      <div class="legend">
+        <span><i class="swatch" style="background:var(--amber)"></i>chief</span>
+        <span><i class="swatch" style="background:var(--cyan)"></i>researcher</span>
+        <span><i class="swatch" style="background:var(--green)"></i>builder</span>
+        <span><i class="swatch" style="background:var(--pink)"></i>reviewer</span>
+      </div>
+      <div class="diagram">
+        <p class="dcap">// universal lifecycle</p>
+        <svg viewBox="0 0 1180 150" role="img" aria-label="Lifecycle pipeline: Capture, Specify (chief); Research (researcher); Build (builder); Review (reviewer); Revise, Done, Archive (chief)">
+          <defs>
+            <marker id="arr" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+              <path d="M0 0 L7 3 L0 6 Z" fill="#5b6b62"/>
+            </marker>
+          </defs>
+          <!-- nodes -->
+          <g>
+            <rect x="24"  y="40" width="124" height="54" rx="10" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/>
+            <text x="86"  y="72" text-anchor="middle" fill="#eafff1" font-size="15">Capture</text>
+            <text x="86"  y="116" text-anchor="middle" fill="#ffb454" font-size="12">chief</text>
+          </g>
+          <line x1="150" y1="67" x2="166" y2="67" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr)"/>
+          <g>
+            <rect x="170" y="40" width="124" height="54" rx="10" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/>
+            <text x="232" y="72" text-anchor="middle" fill="#eafff1" font-size="15">Specify</text>
+            <text x="232" y="116" text-anchor="middle" fill="#ffb454" font-size="12">chief</text>
+          </g>
+          <line x1="296" y1="67" x2="312" y2="67" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr)"/>
+          <g>
+            <rect x="316" y="40" width="124" height="54" rx="10" fill="#57d6e61f" stroke="#57d6e6" stroke-width="2"/>
+            <text x="378" y="72" text-anchor="middle" fill="#eafff1" font-size="15">Research</text>
+            <text x="378" y="116" text-anchor="middle" fill="#57d6e6" font-size="12">researcher</text>
+          </g>
+          <line x1="442" y1="67" x2="458" y2="67" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr)"/>
+          <g>
+            <rect x="462" y="40" width="124" height="54" rx="10" fill="#5ef38c1f" stroke="#5ef38c" stroke-width="2"/>
+            <text x="524" y="72" text-anchor="middle" fill="#eafff1" font-size="15">Build</text>
+            <text x="524" y="116" text-anchor="middle" fill="#5ef38c" font-size="12">builder</text>
+          </g>
+          <line x1="588" y1="67" x2="604" y2="67" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr)"/>
+          <g>
+            <rect x="608" y="40" width="124" height="54" rx="10" fill="#ff6e9c1f" stroke="#ff6e9c" stroke-width="2"/>
+            <text x="670" y="72" text-anchor="middle" fill="#eafff1" font-size="15">Review</text>
+            <text x="670" y="116" text-anchor="middle" fill="#ff6e9c" font-size="12">reviewer</text>
+          </g>
+          <line x1="734" y1="67" x2="750" y2="67" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr)"/>
+          <g>
+            <rect x="754" y="40" width="124" height="54" rx="10" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/>
+            <text x="816" y="72" text-anchor="middle" fill="#eafff1" font-size="15">Revise</text>
+            <text x="816" y="116" text-anchor="middle" fill="#ffb454" font-size="12">chief assigns</text>
+          </g>
+          <line x1="880" y1="67" x2="896" y2="67" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr)"/>
+          <g>
+            <rect x="900" y="40" width="124" height="54" rx="10" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/>
+            <text x="962" y="72" text-anchor="middle" fill="#eafff1" font-size="15">Done</text>
+            <text x="962" y="116" text-anchor="middle" fill="#ffb454" font-size="12">chief</text>
+          </g>
+          <line x1="1026" y1="67" x2="1042" y2="67" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr)"/>
+          <g>
+            <rect x="1046" y="40" width="124" height="54" rx="10" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/>
+            <text x="1108" y="72" text-anchor="middle" fill="#eafff1" font-size="15">Archive</text>
+            <text x="1108" y="116" text-anchor="middle" fill="#ffb454" font-size="12">chief</text>
+          </g>
+        </svg>
+      </div>
+      <p style="font-family:var(--mono); font-size:12.5px; color:var(--dim)">Native Kanban status tracks
+      execution (<code>triage·todo·ready·running·blocked·done·archived</code>); a <code>Stage</code>
+      field in the ticket body tracks workflow stage.</p>
+    </section>
+
+    <!-- ROUTING -->
+    <section id="routing">
+      <h2>routing flows</h2>
+      <p>The Chief picks a path based on ticket type. Three common shapes:</p>
+      <div class="diagram">
+        <p class="dcap">// assignment paths</p>
+        <svg viewBox="0 0 980 250" role="img" aria-label="Three routing flows: Simple (chief, builder, reviewer, chief); Research (chief, researcher, reviewer, chief); Complex (chief, researcher, builder, reviewer, chief)">
+          <defs>
+            <marker id="arr2" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+              <path d="M0 0 L7 3 L0 6 Z" fill="#5b6b62"/>
+            </marker>
+          </defs>
+          <!-- lane labels -->
+          <text x="14" y="50"  fill="#7f9587" font-size="12">SIMPLE</text>
+          <text x="14" y="124" fill="#7f9587" font-size="12">RESEARCH</text>
+          <text x="14" y="198" fill="#7f9587" font-size="12">COMPLEX</text>
+
+          <!-- helper: chip = rounded rect w120 h44; centers at x+60 -->
+          <!-- LANE 1 y=24 -->
+          <g>
+            <rect x="120" y="24" width="120" height="44" rx="9" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/><text x="180" y="51" text-anchor="middle" fill="#eafff1" font-size="14">chief</text>
+            <line x1="242" y1="46" x2="268" y2="46" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="270" y="24" width="120" height="44" rx="9" fill="#5ef38c1f" stroke="#5ef38c" stroke-width="2"/><text x="330" y="51" text-anchor="middle" fill="#eafff1" font-size="14">builder</text>
+            <line x1="392" y1="46" x2="418" y2="46" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="420" y="24" width="120" height="44" rx="9" fill="#ff6e9c1f" stroke="#ff6e9c" stroke-width="2"/><text x="480" y="51" text-anchor="middle" fill="#eafff1" font-size="14">reviewer</text>
+            <line x1="542" y1="46" x2="568" y2="46" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="570" y="24" width="120" height="44" rx="9" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/><text x="630" y="51" text-anchor="middle" fill="#eafff1" font-size="14">chief</text>
+          </g>
+          <!-- LANE 2 y=98 -->
+          <g>
+            <rect x="120" y="98" width="120" height="44" rx="9" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/><text x="180" y="125" text-anchor="middle" fill="#eafff1" font-size="14">chief</text>
+            <line x1="242" y1="120" x2="268" y2="120" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="270" y="98" width="120" height="44" rx="9" fill="#57d6e61f" stroke="#57d6e6" stroke-width="2"/><text x="330" y="125" text-anchor="middle" fill="#eafff1" font-size="14">researcher</text>
+            <line x1="392" y1="120" x2="418" y2="120" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="420" y="98" width="120" height="44" rx="9" fill="#ff6e9c1f" stroke="#ff6e9c" stroke-width="2"/><text x="480" y="125" text-anchor="middle" fill="#eafff1" font-size="14">reviewer</text>
+            <line x1="542" y1="120" x2="568" y2="120" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="570" y="98" width="120" height="44" rx="9" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/><text x="630" y="125" text-anchor="middle" fill="#eafff1" font-size="14">chief</text>
+          </g>
+          <!-- LANE 3 y=172 -->
+          <g>
+            <rect x="120" y="172" width="120" height="44" rx="9" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/><text x="180" y="199" text-anchor="middle" fill="#eafff1" font-size="14">chief</text>
+            <line x1="242" y1="194" x2="268" y2="194" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="270" y="172" width="120" height="44" rx="9" fill="#57d6e61f" stroke="#57d6e6" stroke-width="2"/><text x="330" y="199" text-anchor="middle" fill="#eafff1" font-size="14">researcher</text>
+            <line x1="392" y1="194" x2="418" y2="194" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="420" y="172" width="120" height="44" rx="9" fill="#5ef38c1f" stroke="#5ef38c" stroke-width="2"/><text x="480" y="199" text-anchor="middle" fill="#eafff1" font-size="14">builder</text>
+            <line x1="542" y1="194" x2="568" y2="194" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="570" y="172" width="120" height="44" rx="9" fill="#ff6e9c1f" stroke="#ff6e9c" stroke-width="2"/><text x="630" y="199" text-anchor="middle" fill="#eafff1" font-size="14">reviewer</text>
+            <line x1="692" y1="194" x2="718" y2="194" stroke="#5b6b62" stroke-width="2" marker-end="url(#arr2)"/>
+            <rect x="720" y="172" width="120" height="44" rx="9" fill="#ffb4541f" stroke="#ffb454" stroke-width="2"/><text x="780" y="199" text-anchor="middle" fill="#eafff1" font-size="14">chief</text>
+          </g>
+        </svg>
+      </div>
+      <p style="font-family:var(--mono); font-size:12.5px; color:var(--dim)">Mechanism:
+      <b>dependency graph</b>. Chief (orchestrator) creates one task per role and links them with
+      <code>--parent</code>; the dispatcher auto-promotes a child <code>todo→ready</code> when its
+      parents are <code>done</code>. Each worker completes its own card with
+      <code>kanban_complete</code>; only chief/operator finalizes and <code>archive</code>s.</p>
+    </section>
+
+    <!-- DISPATCH -->
+    <section id="dispatch">
+      <h2>dispatch model</h2>
+      <p>The gateway hosts a dispatcher that runs on an interval (default 60s). It atomically claims
+      <code>ready</code> tickets, spawns the assigned profile as a worker with
+      <code>HERMES_KANBAN_TASK</code> pinned, and the worker drives the board through Kanban
+      <em>tools</em> — never the CLI.</p>
+      <div class="diagram">
+        <p class="dcap">// gateway dispatch loop</p>
+        <svg viewBox="0 0 1000 280" role="img" aria-label="Dispatch architecture: humans drive the board via CLI; the gateway dispatcher claims ready tickets, spawns a worker profile, which uses Kanban tools to update the board in a loop">
+          <defs>
+            <marker id="arr3" markerWidth="11" markerHeight="11" refX="7" refY="3" orient="auto">
+              <path d="M0 0 L7 3 L0 6 Z" fill="#7f9587"/>
+            </marker>
+          </defs>
+          <!-- human/CLI -->
+          <rect x="40" y="20" width="220" height="56" rx="10" fill="#0f1512" stroke="#1f2a23" stroke-width="2"/>
+          <text x="150" y="44" text-anchor="middle" fill="#7f9587" font-size="13">human / automation</text>
+          <text x="150" y="62" text-anchor="middle" fill="#5b6b62" font-size="11.5">hermes kanban …</text>
+          <!-- board -->
+          <rect x="40" y="118" width="220" height="92" rx="12" fill="#0c120e" stroke="#5ef38c" stroke-width="2"/>
+          <text x="150" y="150" text-anchor="middle" fill="#eafff1" font-size="15">Kanban Board</text>
+          <text x="150" y="172" text-anchor="middle" fill="#5ef38c" font-size="12">agentic-mvp</text>
+          <text x="150" y="192" text-anchor="middle" fill="#5b6b62" font-size="11">source of truth</text>
+          <!-- gateway -->
+          <rect x="360" y="118" width="250" height="92" rx="12" fill="#0c120e" stroke="#57d6e6" stroke-width="2"/>
+          <text x="485" y="148" text-anchor="middle" fill="#eafff1" font-size="15">Gateway · Dispatcher</text>
+          <text x="485" y="170" text-anchor="middle" fill="#57d6e6" font-size="12">claims ready tickets</text>
+          <text x="485" y="190" text-anchor="middle" fill="#5b6b62" font-size="11">~60s loop</text>
+          <!-- worker -->
+          <rect x="710" y="30" width="250" height="80" rx="12" fill="#0c120e" stroke="#ffb454" stroke-width="2"/>
+          <text x="835" y="60" text-anchor="middle" fill="#eafff1" font-size="15">Worker = profile</text>
+          <text x="835" y="82" text-anchor="middle" fill="#ffb454" font-size="11.5">HERMES_KANBAN_TASK pinned</text>
+          <!-- tools -->
+          <rect x="710" y="158" width="250" height="80" rx="12" fill="#0c120e" stroke="#ff6e9c" stroke-width="2"/>
+          <text x="835" y="188" text-anchor="middle" fill="#eafff1" font-size="15">Kanban tools</text>
+          <text x="835" y="210" text-anchor="middle" fill="#ff6e9c" font-size="11.5">kanban_show · kanban_complete</text>
+
+          <!-- arrows -->
+          <line x1="150" y1="76" x2="150" y2="116" stroke="#7f9587" stroke-width="2" marker-end="url(#arr3)"/>
+          <text x="160" y="100" fill="#5b6b62" font-size="11">create / move</text>
+
+          <line x1="260" y1="164" x2="358" y2="164" stroke="#7f9587" stroke-width="2" marker-end="url(#arr3)"/>
+          <text x="266" y="154" fill="#5b6b62" font-size="11">ready?</text>
+
+          <line x1="610" y1="150" x2="708" y2="84" stroke="#7f9587" stroke-width="2" marker-end="url(#arr3)"/>
+          <text x="612" y="108" fill="#5b6b62" font-size="11">spawn assignee</text>
+
+          <line x1="835" y1="110" x2="835" y2="156" stroke="#7f9587" stroke-width="2" marker-end="url(#arr3)"/>
+          <text x="845" y="138" fill="#5b6b62" font-size="11">invoke tools</text>
+
+          <!-- loop back tools -> board (bottom) -->
+          <path d="M710 220 L150 220 L150 212" fill="none" stroke="#7f9587" stroke-width="2" marker-end="url(#arr3)" stroke-dasharray="5 5"/>
+          <text x="360" y="240" fill="#5b6b62" font-size="11">update status · attach artifacts</text>
+        </svg>
+      </div>
+    </section>
+
+    <!-- FILES -->
+    <section id="files">
+      <h2>generated files</h2>
+      <p>Paths are relative to this page (<code>output/</code>). Click any file to open it.</p>
+
+      <h3>profile identities <span class="pill">copy → ~/.hermes/profiles/&lt;name&gt;/</span></h3>
+      <ul class="files">
+        <li><span class="ic">▸</span><a href="./profiles/chief/SOUL.md">profiles/chief/SOUL.md</a><span class="desc">Chief identity &amp; decision rules</span></li>
+        <li><span class="ic">▸</span><a href="./profiles/researcher/SOUL.md">profiles/researcher/SOUL.md</a><span class="desc">Researcher identity &amp; output standard</span></li>
+        <li><span class="ic">▸</span><a href="./profiles/builder/SOUL.md">profiles/builder/SOUL.md</a><span class="desc">Builder identity &amp; handoff standard</span></li>
+        <li><span class="ic">▸</span><a href="./profiles/reviewer/SOUL.md">profiles/reviewer/SOUL.md</a><span class="desc">Reviewer identity &amp; verdicts</span></li>
+      </ul>
+
+      <h3>workspace <span class="pill">maps → ~/HermesWork/agentic-mvp/</span></h3>
+      <ul class="files">
+        <li><span class="ic">▸</span><a href="./agentic-mvp/README.md">agentic-mvp/README.md</a><span class="desc">entry point &amp; first commands</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/AGENTS.md">agentic-mvp/AGENTS.md</a><span class="desc">project context for agents</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/HERMES.md">agentic-mvp/HERMES.md</a><span class="desc">Hermes Work OS instructions</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/CLAUDE.md">agentic-mvp/CLAUDE.md</a><span class="desc">Claude Code context</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/TEAM.md">agentic-mvp/TEAM.md</a><span class="desc">team charter &amp; chain of responsibility</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/WORKFLOW.md">agentic-mvp/WORKFLOW.md</a><span class="desc">lifecycle &amp; stage definitions</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/MEMORY_POLICY.md">agentic-mvp/MEMORY_POLICY.md</a><span class="desc">what may/may not enter durable memory</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/REVIEW_CHECKLIST.md">agentic-mvp/REVIEW_CHECKLIST.md</a><span class="desc">reviewer checklists by ticket type</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/CARD_TEMPLATE.md">agentic-mvp/CARD_TEMPLATE.md</a><span class="desc">ticket template</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/HANDOFF_TEMPLATE.md">agentic-mvp/HANDOFF_TEMPLATE.md</a><span class="desc">handoff template</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/tickets/TICKET-0001/TASK.md">agentic-mvp/tickets/TICKET-0001/TASK.md</a><span class="desc">filled-in sample / validation ticket</span></li>
+        <li><span class="ic">▸</span><a href="./agentic-mvp/scripts/setup-agentic-hermes-mvp.sh">agentic-mvp/scripts/setup-agentic-hermes-mvp.sh</a><span class="desc">scaffolds files, prints Hermes commands</span></li>
+      </ul>
+
+      <h3>build summary</h3>
+      <ul class="files">
+        <li><span class="ic">▸</span><a href="./SUMMARY.md">SUMMARY.md</a><span class="desc">files created, commands, validation, limitations</span></li>
+      </ul>
+    </section>
+
+    <!-- QUICKSTART -->
+    <section id="quickstart">
+      <h2>quick start</h2>
+      <div class="step"><div class="n">1</div><div class="b">Run the setup script — it scaffolds <code>~/HermesWork/agentic-mvp</code> and prints the Hermes commands.</div></div>
+      <pre><code><span class="cmt"># default workspace: ~/HermesWork/agentic-mvp</span>
+bash output/agentic-mvp/scripts/setup-agentic-hermes-mvp.sh
+
+<span class="cmt"># options</span>
+bash output/agentic-mvp/scripts/setup-agentic-hermes-mvp.sh <span class="flag">--help</span>
+bash output/agentic-mvp/scripts/setup-agentic-hermes-mvp.sh <span class="flag">--dry-run</span>
+bash output/agentic-mvp/scripts/setup-agentic-hermes-mvp.sh <span class="flag">--overwrite-soul</span></code></pre>
+      <div class="step"><div class="n">2</div><div class="b">Run the printed <code>hermes</code> commands yourself, in order (below).</div></div>
+      <div class="step"><div class="n">3</div><div class="b">Create the sample ticket and watch it flow across the board.</div></div>
+    </section>
+
+    <!-- COMMANDS -->
+    <section id="commands">
+      <h2>hermes commands</h2>
+      <p>Printed by the setup script; run them yourself. Verified against the <a href="#docs">Hermes docs</a>.</p>
+
+      <h3>1 · create the four profiles</h3>
+      <pre><code>hermes profile create chief <span class="flag">--clone-from</span> default <span class="flag">--description</span> <span class="str">"Orchestrates Kanban work, clarifies requests, creates tickets…"</span>
+hermes profile create researcher <span class="flag">--clone-from</span> default <span class="flag">--description</span> <span class="str">"Researches, analyzes, compares options, diagnoses problems…"</span>
+hermes profile create builder <span class="flag">--clone-from</span> default <span class="flag">--description</span> <span class="str">"Creates requested artifacts: code, scripts, documents, plans…"</span>
+hermes profile create reviewer <span class="flag">--clone-from</span> default <span class="flag">--description</span> <span class="str">"Reviews completed work against acceptance criteria…"</span></code></pre>
+
+      <h3>2 · confirm paths, then place each SOUL.md</h3>
+      <pre><code>hermes profile show chief        <span class="cmt"># repeat for researcher / builder / reviewer</span>
+cp profiles/chief/SOUL.md      ~/.hermes/profiles/chief/SOUL.md
+cp profiles/researcher/SOUL.md ~/.hermes/profiles/researcher/SOUL.md
+cp profiles/builder/SOUL.md    ~/.hermes/profiles/builder/SOUL.md
+cp profiles/reviewer/SOUL.md   ~/.hermes/profiles/reviewer/SOUL.md</code></pre>
+
+      <h3>3 · point each profile at the workspace</h3>
+      <pre><code>chief      config set terminal.cwd ~/HermesWork/agentic-mvp
+researcher config set terminal.cwd ~/HermesWork/agentic-mvp
+builder    config set terminal.cwd ~/HermesWork/agentic-mvp
+reviewer   config set terminal.cwd ~/HermesWork/agentic-mvp</code></pre>
+
+      <h3>4 · configure Chief as orchestrator + WIP limits</h3>
+      <pre><code>chief config set kanban.orchestrator_profile chief
+chief config set kanban.default_assignee chief
+chief config set kanban.auto_decompose false   <span class="cmt"># explicit graph (may already be false)</span>
+chief config set kanban.max_in_progress 3      <span class="cmt"># PRD WIP target</span>
+
+<span class="cmt"># edit Chief config; both lists must contain:</span>
+toolsets: [hermes-cli, kanban]
+platform_toolsets:
+  cli: [hermes-cli, kanban]
+
+chief skills list | grep kanban-orchestrator || chief skills reset kanban-orchestrator --restore --yes
+researcher skills list | grep kanban-worker || researcher skills reset kanban-worker --restore --yes
+builder skills list | grep kanban-worker || builder skills reset kanban-worker --restore --yes
+reviewer skills list | grep kanban-worker || reviewer skills reset kanban-worker --restore --yes</code></pre>
+
+      <h3>5 · initialize Kanban &amp; create the board</h3>
+      <pre><code>hermes kanban init
+hermes kanban boards create agentic-mvp \
+  <span class="flag">--name</span> <span class="str">"Agentic Hermes MVP"</span> \
+  <span class="flag">--description</span> <span class="str">"Generic agentic work system using chief, researcher, builder, and reviewer profiles."</span> \
+  <span class="flag">--switch</span>
+hermes kanban boards list
+hermes kanban boards show</code></pre>
+
+      <h3>6 · start the dispatcher &amp; build the dependency graph</h3>
+      <pre><code>chief gateway start   <span class="cmt"># chief hosts the gateway/dispatcher</span>
+
+<span class="cmt"># related cards share one ticket-isolated workspace.</span>
+<span class="cmt"># the dispatcher auto-promotes a child todo→ready when its parents are done.</span>
+TICKET_WS="$HOME/HermesWork/agentic-mvp/workspaces/TICKET-0001"
+mkdir -p "$TICKET_WS"
+BUILD=$(hermes kanban create <span class="str">"Build: Agentic Hermes MVP overview"</span> <span class="flag">--assignee</span> builder \
+  <span class="flag">--body</span> <span class="str">"Create outputs/hello-hermes.md; explain all roles and build -&gt; review -&gt; finalize; no placeholders."</span> \
+  <span class="flag">--workspace</span> <span class="str">"dir:$TICKET_WS"</span> <span class="flag">--json</span> | jq -r .id)
+REVIEW=$(hermes kanban create <span class="str">"Review: Agentic Hermes MVP overview"</span> <span class="flag">--assignee</span> reviewer <span class="flag">--parent</span> <span class="str">"$BUILD"</span> \
+  <span class="flag">--body</span> <span class="str">"Verify acceptance criteria and record a verdict."</span> <span class="flag">--workspace</span> <span class="str">"dir:$TICKET_WS"</span> <span class="flag">--json</span> | jq -r .id)
+FINALIZE=$(hermes kanban create <span class="str">"Finalize: Agentic Hermes MVP overview"</span> <span class="flag">--assignee</span> chief <span class="flag">--parent</span> <span class="str">"$REVIEW"</span> \
+  <span class="flag">--body</span> <span class="str">"Close only after accepted review."</span> <span class="flag">--workspace</span> <span class="str">"dir:$TICKET_WS"</span> <span class="flag">--json</span> | jq -r .id)
+
+hermes kanban watch
+hermes kanban list
+hermes kanban stats</code></pre>
+    </section>
+
+    <!-- VALIDATION -->
+    <section id="validation">
+      <h2>validation</h2>
+      <pre><code>hermes profile list
+hermes profile show chief        <span class="cmt"># + researcher / builder / reviewer</span>
+ls -la ~/HermesWork/agentic-mvp
+ls -la ~/HermesWork/agentic-mvp/templates
+hermes kanban boards list
+hermes kanban boards show
+hermes kanban stats</code></pre>
+      <div class="ok"><b>EXPECTED</b> — Chief specifies the ticket → routes to builder → builder writes
+      <code>outputs/hello-hermes.md</code> → reviewer writes <code>REVIEW.md</code> with a verdict →
+      chief closes. See the sample <a href="./agentic-mvp/tickets/TICKET-0001/TASK.md">TICKET-0001/TASK.md</a>.</div>
+    </section>
+
+    <!-- CAVEATS -->
+    <section id="caveats">
+      <h2>caveats</h2>
+      <div class="note"><b>Required skills</b> — verify <code>kanban-orchestrator</code> for Chief and
+      <code>kanban-worker</code> for each worker; restore missing bundled skills before dispatch.</div>
+      <div class="note"><b>Revision gate</b> — review remains blocked while a linked revision runs.
+      Chief unblocks the same review only after revision completion.</div>
+      <div class="note"><b>SOUL.md location</b> — read from <code>HERMES_HOME</code> (<code>~/.hermes</code>
+      by default), never from the working directory, so identity files are staged under
+      <a href="./profiles/">profiles/</a>.</div>
+      <div class="ok"><b>SAFETY</b> — the script writes no secrets and never overwrites existing files
+      without <code>--force</code> (context/templates) or <code>--overwrite-soul</code> (SOUL.md).</div>
+    </section>
+
+    <!-- DOCS -->
+    <section id="docs">
+      <h2>hermes documentation</h2>
+      <ul class="files">
+        <li><span class="ic">↗</span><a href="https://hermes-agent.nousresearch.com/docs/" target="_blank" rel="noopener">docs home</a></li>
+        <li><span class="ic">↗</span><a href="https://hermes-agent.nousresearch.com/docs/user-guide/profiles" target="_blank" rel="noopener">profiles</a><span class="desc">create / clone / show / config</span></li>
+        <li><span class="ic">↗</span><a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/personality" target="_blank" rel="noopener">personality / SOUL.md</a></li>
+        <li><span class="ic">↗</span><a href="https://hermes-agent.nousresearch.com/docs/user-guide/configuration" target="_blank" rel="noopener">configuration</a><span class="desc">config set · terminal.cwd</span></li>
+        <li><span class="ic">↗</span><a href="https://hermes-agent.nousresearch.com/docs/user-guide/features/kanban" target="_blank" rel="noopener">kanban</a><span class="desc">boards · tickets · dispatch · gateway</span></li>
+      </ul>
+      <footer>
+        Generated from <code>hermes-agentic-work-system.md</code>. Agent portraits &amp; flow diagrams are
+        hand-built inline SVG (self-contained, offline). Aesthetic inspired by the retro-terminal / BBS
+        styling of <a href="https://magnus919.com" target="_blank" rel="noopener">magnus919.com</a>.
+        The setup script prints Hermes commands and never executes them. &nbsp;<a href="#top">▲ back to top</a>
+      </footer>
+    </section>
+  </main>
+</div>
+</body>
+</html>
